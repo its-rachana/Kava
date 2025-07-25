@@ -17,9 +17,9 @@ const {
 
 const { protect } = require("../middleware/authMiddleware");
 
-router.post("/initiate-chat",protect, initiateNewChat);
-router.get("/",protect, fetchChats);
-router.post("/messages", protect, addMessageToConversation)
+router.post("/initiate-chat",protect, initiateNewChat);     //done
+router.get("/",protect, fetchChats);                      //done
+router.post("/messages", protect, addMessageToConversation) //done
 
 
 router.put("/remove", protect, deleteIndividualChat);

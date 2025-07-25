@@ -1,8 +1,6 @@
 const asyncHandler = require("express-async-handler");
-const User = require("../models/Users");
 const UserChats = require("../models/UserChats");
 const mongoose = require("mongoose");
-const {async} = require("nodemon");
 
 const addMessageToConversation = asyncHandler(async (req, res) => {
     const {senderId, text, withUserId} = req.body;
@@ -67,7 +65,10 @@ const fetchChats = asyncHandler(async (req, res) => {
     if (!req.query.userId) {
         return res.status(400).json({message: "User ID is required"});
     }
-
+    console.log("user id is found",req.query.userId)
+    if (!mongoose.Types.ObjectId.isValid(req.query.userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+    }
     try {
         const userChat = await UserChats.findOne({
             _id: req.query.userId
@@ -76,13 +77,15 @@ const fetchChats = asyncHandler(async (req, res) => {
             select: "name email pic",
             model: "User"
         }).lean();
-
+        console.log(userChat)
         if (!userChat) {
             return res.status(200).json([]);
         }
 
         return res.status(200).json(userChat || []);
     } catch (error) {
+        console.error("FetchChats Error:", error.stack);
+
         return res.status(500).json({message: "Server error"});
     }
 });

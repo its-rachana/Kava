@@ -18,14 +18,17 @@ const upload = require("../middleware/uploadMiddleware");
 router.get("/profile", protect, (req, res) => {
   res.json(req.user);
 });
-router.get("/",protect, userSearch);
-router.post("/register", userRegister);
-router.post("/login", userLogin);
-router.put('/secret-key', protect, updateSecretKey);
-router.post('/send-otp', sendOtp);
-router.post("/reset-password", protect, updatePassword);
-router.post('/verify-otp', verifyOtp)
-router.post("/upload-photo", upload.single("profilePhoto"), uploadProfilePhoto);
-router.get("/profile",protect,getUserProfile)
-router.put("/toggle-2fa",protect,update2fAuthentication)
+router.get("/",protect, userSearch);            //done
+router.get("/profile",protect,getUserProfile)   //done
+
+router.post("/register", userRegister);         //done
+router.post("/login", userLogin);               //done
+router.post('/send-otp', sendOtp);              //done
+router.post("/reset-password", protect, updatePassword);      //done
+router.post('/verify-otp', verifyOtp)                         //done
+router.post("/upload-photo", upload.single("profilePhoto"), uploadProfilePhoto);  //done
+
+router.put("/toggle-2fa",protect,update2fAuthentication)      //done
+router.put('/secret-key', protect, updateSecretKey);          //done
+
 module.exports = router;
