@@ -18,6 +18,10 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
     const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, messageId: null });
     const [longPressTimer, setLongPressTimer] = useState(null);
     const [longPressStartPos, setLongPressStartPos] = useState({ x: 0, y: 0 });
+    const [showInputActions, setShowInputActions] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [isGettingLocation, setIsGettingLocation] = useState(false);
+    const [locationError, setLocationError] = useState(null);
     const messageEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const recordingIntervalRef = useRef(null);
@@ -36,7 +40,7 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
         messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // Handle clicks outside context menu
+    // Handle clicks outside context menu and modal
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (contextMenu.show && !event.target.closest('.message-context-menu')) {
@@ -44,9 +48,26 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
             }
         };
 
+        const handleEscapeKey = (event) => {
+            if (event.key === 'Escape') {
+                setShowProfileModal(false);
+                setContextMenu({ show: false, x: 0, y: 0, messageId: null });
+                // Also close any active input modes
+                setShowScheduler(false);
+                if (isRecording) {
+                    stopRecording();
+                }
+                setShowEmojiPicker(false);
+            }
+        };
+
         document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
-    }, [contextMenu.show]);
+        document.addEventListener('keydown', handleEscapeKey);
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+            document.removeEventListener('keydown', handleEscapeKey);
+        };
+    }, [contextMenu.show, isRecording]);
 
     useEffect(() => {
         return () => {
@@ -87,7 +108,6 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
                 }
             );
 
-
             setMessages((prev) => [...prev, data.newMessage]);
             setNewMsg("");
             setAttachments([]);
@@ -110,6 +130,16 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
     const onEmojiClick = (emojiObject) => {
         setNewMsg(prev => prev + emojiObject.emoji);
         setShowEmojiPicker(false); // Close picker after selection
+    };
+
+    const resetAllActions = () => {
+        setShowEmojiPicker(false);
+        setShowScheduler(false);
+        setShowInputActions(false);
+        // Stop recording if it's active
+        if (isRecording) {
+            stopRecording();
+        }
     };
 
     const handleFileSelect = (event) => {
@@ -136,6 +166,11 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
     };
 
     const startRecording = async () => {
+        // Reset other actions and hide input actions bar
+        setShowEmojiPicker(false);
+        setShowScheduler(false);
+        setShowInputActions(false);
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const recorder = new MediaRecorder(stream);
@@ -177,6 +212,19 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
             mediaRecorder.stop();
             setIsRecording(false);
             setRecordingTime(0);
+            setShowInputActions(true); // Show input actions after recording stops
+            if (recordingIntervalRef.current) {
+                clearInterval(recordingIntervalRef.current);
+            }
+        }
+    };
+
+    const cancelRecording = () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            setIsRecording(false);
+            setRecordingTime(0);
+            setShowInputActions(true); // Show input actions after canceling
             if (recordingIntervalRef.current) {
                 clearInterval(recordingIntervalRef.current);
             }
@@ -302,12 +350,111 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
         }
     };
 
-    // Helper function to get chat display name
     const getChatDisplayName = () => {
         if (selectedChat.isGroupChat) {
             return selectedChat.chatName;
         }
         return selectedChat.withUserName || selectedChat.withUserId?.name || "Unknown User";
+    };
+
+    const getUserProfilePicture = () => {
+        if (selectedChat.isGroupChat) {
+            return selectedChat.groupPicture || "https://images.pexels.com/photos/8761854/pexels-photo-8761854.jpeg?auto=compress&cs=tinysrgb&w=400";
+        }
+        return selectedChat.withUserId?.profilePicture || selectedChat.profilePicture || "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400";
+    };
+
+    const handleProfilePictureClick = () => {
+        setShowProfileModal(true);
+    };
+
+    const handleModalClick = (e) => {
+        if (e.target === e.currentTarget) {
+            setShowProfileModal(false);
+        }
+    };
+
+    const shareLocation = async () => {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by this browser.');
+            return;
+        }
+
+        setIsGettingLocation(true);
+        setLocationError(null);
+        resetAllActions();
+        setShowInputActions(false);
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000 // Cache location for 1 minute
+        };
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                const accuracy = position.coords.accuracy;
+
+                try {
+                    // Create a Google Maps link
+                    const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                    const locationText = `📍 My Location\n${mapsUrl}\n(Accuracy: ~${Math.round(accuracy)}m)`;
+
+                    const messageData = {
+                        senderId: currentUser._id,
+                        withUserId: selectedChat.withUserId?._id || selectedChat.withUserId,
+                        text: locationText,
+                        attachments: [],
+                        isLocation: true,
+                        locationData: {
+                            latitude,
+                            longitude,
+                            accuracy,
+                            mapsUrl
+                        }
+                    };
+
+                    const { data } = await axios.post(
+                        process.env.REACT_APP_API_URL + "/api/chat/messages",
+                        messageData,
+                        {
+                            headers: { Authorization: `Bearer ${userInfo.token}` },
+                        }
+                    );
+
+                    setMessages((prev) => [...prev, data.newMessage]);
+                    setIsGettingLocation(false);
+                } catch (err) {
+                    console.error("Error sending location:", err);
+                    setIsGettingLocation(false);
+                    alert('Failed to send location. Please try again.');
+                }
+            },
+            (error) => {
+                setIsGettingLocation(false);
+                let errorMessage = 'Unable to get your location. ';
+
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage += 'Please allow location access and try again.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage += 'Location information is unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage += 'Location request timed out. Please try again.';
+                        break;
+                    default:
+                        errorMessage += 'An unknown error occurred.';
+                        break;
+                }
+
+                setLocationError(errorMessage);
+                alert(errorMessage);
+            },
+            options
+        );
     };
 
     return (
@@ -318,9 +465,58 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
                 </button>
             )}
 
-            <h3 className="classic-chat-heading">
-                Chat with {getChatDisplayName()}
-            </h3>
+            <div className="chat-header">
+                <div className="chat-header-left">
+                    <div
+                        className="profile-picture-container"
+                        onClick={handleProfilePictureClick}
+                    >
+                        <img
+                            src={getUserProfilePicture()}
+                            alt={getChatDisplayName()}
+                            className="profile-picture"
+                        />
+                        <div className="profile-picture-overlay">
+                            <span className="zoom-icon">🔍</span>
+                        </div>
+                    </div>
+                    <div className="chat-info">
+                        <h3 className="classic-chat-heading">
+                            Chat with {getChatDisplayName()}
+                        </h3>
+                        <p className="chat-status">
+                            {selectedChat.isGroupChat ? 'Group Chat' : 'Online'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Profile Picture Modal */}
+            {showProfileModal && (
+                <div className="profile-modal-overlay" onClick={handleModalClick}>
+                    <div className="profile-modal-content">
+                        <button
+                            className="profile-modal-close"
+                            onClick={() => setShowProfileModal(false)}
+                        >
+                            ×
+                        </button>
+                        <div className="profile-modal-image-container">
+                            <img
+                                src={getUserProfilePicture()}
+                                alt={getChatDisplayName()}
+                                className="profile-modal-image"
+                            />
+                        </div>
+                        <div className="profile-modal-info">
+                            <h3>{getChatDisplayName()}</h3>
+                            <p className="profile-modal-status">
+                                {selectedChat.isGroupChat ? 'Group Chat' : 'Direct Message'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="classic-messages-container">
                 {messages.map((m) => {
@@ -362,6 +558,19 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
                                 <div className="classic-message-content">
                                     {m.text}
                                 </div>
+                                {/* Render location messages with clickable links */}
+                                {m.isLocation && m.locationData && (
+                                    <div className="location-message">
+                                        <a
+                                            href={m.locationData.mapsUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="location-link"
+                                        >
+                                            🗺️ Open in Google Maps
+                                        </a>
+                                    </div>
+                                )}
                                 <div className="classic-message-time">
                                     {formatTime(m.timestamp || m.createdAt || new Date())}
                                 </div>
@@ -398,7 +607,7 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
             )}
 
             {/* Attachments Preview */}
-            {attachments.length > 0 && (
+            {showInputActions && attachments.length > 0 && (
                 <div className="attachments-preview">
                     {attachments.map((attachment, index) => (
                         <div key={index} className="attachment-item">
@@ -432,103 +641,209 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
                 </div>
             )}
 
-            {/* Scheduler */}
-            {showScheduler && (
-                <div className="scheduler-container">
-                    <h4>Schedule Message</h4>
-                    <div className="scheduler-inputs">
-                        <input
-                            type="date"
-                            value={scheduledDate}
-                            onChange={(e) => setScheduledDate(e.target.value)}
-                            min={new Date().toISOString().split('T')[0]}
-                            className="scheduler-input"
-                        />
-                        <input
-                            type="time"
-                            value={scheduledTime}
-                            onChange={(e) => setScheduledTime(e.target.value)}
-                            className="scheduler-input"
-                        />
-                    </div>
-                    <div className="scheduler-actions">
-                        <button onClick={scheduleMessage} className="schedule-btn">
-                            Schedule
-                        </button>
-                        <button onClick={() => setShowScheduler(false)} className="cancel-schedule-btn">
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            )}
-
             <div className="classic-input-container">
-                {/* Input Actions Bar */}
-                <div className="input-actions-bar">
-                    <div style={{ position: 'relative' }}>
+                {/* Input Actions Bar - Only show when not recording and not scheduling */}
+                {showInputActions && !isRecording && !showScheduler && (
+                    <div className="input-actions-bar">
+                        <div style={{position: 'relative'}}>
+                            <button
+                                onClick={() => {
+                                    if (showEmojiPicker) {
+                                        setShowEmojiPicker(false);
+                                    } else {
+                                        resetAllActions();
+                                        setShowEmojiPicker(true);
+                                    }
+                                }}
+                                className="action-btn emoji-btn"
+                                title="Add Emoji"
+                            >
+                                😊
+                            </button>
+
+                            {/* Emoji Picker */}
+                            {showEmojiPicker && (
+                                <div className="emoji-picker-container">
+                                    <EmojiPicker
+                                        onEmojiClick={onEmojiClick}
+                                        width={300}
+                                        height={400}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Emoji Picker */}
+                            {showEmojiPicker && (
+                                <div className="emoji-picker-container">
+                                    <EmojiPicker
+                                        onEmojiClick={onEmojiClick}
+                                        width={300}
+                                        height={400}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
                         <button
-                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                            className="action-btn emoji-btn"
-                            title="Add Emoji"
+                            onClick={() => {
+                                resetAllActions();
+                                setShowInputActions(false);
+                                fileInputRef.current?.click();
+                            }}
+                            className="action-btn attachment-btn"
+                            title="Attach File"
                         >
-                            😊
+                            📎
                         </button>
 
-                        {/* Emoji Picker */}
-                        {showEmojiPicker && (
-                            <div className="emoji-picker-container">
-                                <EmojiPicker
-                                    onEmojiClick={onEmojiClick}
-                                    width={300}
-                                    height={400}
-                                />
-                            </div>
-                        )}
+                        <button
+                            onClick={startRecording}
+                            className="action-btn voice-btn"
+                            title="Record Voice"
+                        >
+                            🎤
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                resetAllActions();
+                                setShowInputActions(false);
+                                setShowScheduler(true);
+                            }}
+                            className="action-btn schedule-btn"
+                            title="Schedule Message"
+                        >
+                            ⏰
+                        </button>
+                        <button
+                            onClick={() => {
+                                shareLocation();
+                            }}
+                            className={`action-btn location-btn ${isGettingLocation ? 'loading' : ''}`}
+                            title="Share location"
+                            disabled={isGettingLocation}
+                        >
+                            {isGettingLocation ? (
+                                <>
+                                    <span className="location-spinner"></span>
+                                    Getting location...
+                                </>
+                            ) : (
+                                '📍'
+                            )}
+                        </button>
                     </div>
+                )}
 
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="action-btn attachment-btn"
-                        title="Attach File"
-                    >
-                        📎
-                    </button>
+                {/* Recording Interface - Replaces input actions bar */}
+                {isRecording && (
+                    <div className="recording-interface">
+                        <div className="recording-content">
+                            <div className="recording-indicator">
+                                <span className="recording-dot"></span>
+                                <span className="recording-text">Recording...</span>
+                                <span className="recording-time">{formatRecordingTime(recordingTime)}</span>
+                            </div>
+                            <div className="recording-controls">
+                                <button
+                                    onClick={cancelRecording}
+                                    className="recording-btn cancel-recording"
+                                    title="Cancel Recording"
+                                >
+                                    ❌ Cancel
+                                </button>
+                                <button
+                                    onClick={stopRecording}
+                                    className="recording-btn stop-recording"
+                                    title="Stop Recording"
+                                >
+                                    ⏹️ Stop
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-                    <button
-                        onClick={isRecording ? stopRecording : startRecording}
-                        className={`action-btn voice-btn ${isRecording ? 'recording' : ''}`}
-                        title={isRecording ? 'Stop Recording' : 'Record Voice'}
-                    >
-                        {isRecording ? '⏹️' : '🎤'}
-                        {isRecording && <span className="recording-time">{formatRecordingTime(recordingTime)}</span>}
-
-
-                    </button>
-
-                    <button
-                        onClick={() => setShowScheduler(!showScheduler)}
-                        className={`action-btn schedule-btn ${showScheduler ? 'active' : ''}`}
-                        title="Schedule Message"
-                    >
-                        ⏰
-                    </button>
-                </div>
+                {/* Scheduler Interface - Replaces input actions bar */}
+                {showScheduler && (
+                    <div className="scheduler-interface">
+                        <div className="scheduler-header">
+                            <h4>📅 Schedule Message</h4>
+                            <button
+                                onClick={() => {
+                                    setShowScheduler(false);
+                                    setShowInputActions(true);
+                                }}
+                                className="close-scheduler-btn"
+                                title="Close Scheduler"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="scheduler-inputs">
+                            <input
+                                type="date"
+                                value={scheduledDate}
+                                onChange={(e) => setScheduledDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                className="scheduler-input"
+                                placeholder="Select date"
+                            />
+                            <input
+                                type="time"
+                                value={scheduledTime}
+                                onChange={(e) => setScheduledTime(e.target.value)}
+                                className="scheduler-input"
+                                placeholder="Select time"
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* Main Input Row */}
                 <div className="main-input-row">
-                    <input
-                        type="text"
-                        value={newMsg}
-                        onChange={(e) => setNewMsg(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder="Type your message..."
-                        className="classic-input-box"
-                    />
+                    <div className="input-wrapper">
+                        <button
+                            onClick={() => {
+                                if (isRecording || showScheduler) {
+                                    // If in recording or scheduling mode, go back to normal
+                                    if (isRecording) {
+                                        cancelRecording();
+                                    }
+                                    if (showScheduler) {
+                                        setShowScheduler(false);
+                                    }
+                                    setShowInputActions(true);
+                                } else {
+                                    setShowInputActions(!showInputActions);
+                                }
+                            }}
+                            className={`toggle-actions-btn-inside ${showInputActions || isRecording || showScheduler ? 'active' : ''}`}
+                            title={showInputActions ? 'Hide Actions' : 'Show Actions'}
+                        >
+                            {isRecording || showScheduler ? '←' : showInputActions ? '−' : '+'}
+                        </button>
+                        <input
+                            type="text"
+                            value={newMsg}
+                            onChange={(e) => setNewMsg(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            placeholder={
+                                showScheduler
+                                    ? "Type message to schedule..."
+                                    : isRecording
+                                        ? "Voice recording in progress..."
+                                        : "Type your message..."
+                            }
+                            className="classic-input-box"
+                            disabled={isRecording}
+                        />
+                    </div>
 
                     <button
                         onClick={showScheduler ? scheduleMessage : sendMessage}
                         className="classic-send-button"
-                        disabled={!newMsg.trim() && attachments.length === 0}
+                        disabled={(!newMsg.trim() && attachments.length === 0) || isRecording}
                     >
                         {showScheduler ? 'Schedule' : 'Send'}
                     </button>
