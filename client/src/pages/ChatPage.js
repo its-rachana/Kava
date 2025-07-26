@@ -30,6 +30,7 @@ const ChatPage = () => {
     const [showSecretKey, setShowSecretKey] = useState(false);
     const [base64Image, setBase64Image] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
+    const [isProfileImageModalOpen, setIsProfileImageModalOpen] = useState(false);
 
     // Long press functionality
     const [longPressedChat, setLongPressedChat] = useState(null);
@@ -108,11 +109,17 @@ const ChatPage = () => {
 
     const handleChatCreated = (newChat) => {
         setChats((prevChats) => {
-            const exists = prevChats.find((chat) => chat._id === newChat._id);
-            if (!exists) {
+            // Check if chat already exists
+            const existingIndex = prevChats.findIndex((chat) => chat._id === newChat._id);
+            if (existingIndex === -1) {
+                // Chat doesn't exist, add it to the beginning
                 return [newChat, ...prevChats];
+            } else {
+                // Chat exists, update it and move to beginning
+                const updatedChats = [...prevChats];
+                updatedChats.splice(existingIndex, 1); // Remove from current position
+                return [newChat, ...updatedChats]; // Add to beginning
             }
-            return prevChats;
         });
         setSelectedChat(newChat);
     };
@@ -177,9 +184,13 @@ const ChatPage = () => {
     };
 
     const handleProfileClick = () => {
-        // Navigate to profile page or open profile modal
-        // This would typically use React Router
-        window.location.href = "/profile";
+        setIsProfileImageModalOpen(true);
+        setIsModalOpen(true);
+    };
+
+    const handleProfileImageModalClose = () => {
+        setIsProfileImageModalOpen(false);
+        setIsModalOpen(false);
     };
 
     const handleChatDoubleClick = (chatId) => {
@@ -361,7 +372,6 @@ const ChatPage = () => {
     };
 
     const startChat = async (userDetails) => {
-        console.log(userDetails)
         try {
             const {token, _id} = JSON.parse(localStorage.getItem("userInfo"));
             const config = {
@@ -378,10 +388,39 @@ const ChatPage = () => {
                 },
                 config
             );
-            handleChatCreated(data);
+
+            // Ensure the chat object has the correct structure
+            const normalizedChat = {
+                ...data,
+                withUserName: data.withUserName || userDetails.name,
+                withUserId: data.withUserId || userDetails._id,
+                messages: data.messages || []
+            };
+
+            // Check if chat already exists in current chats
+            const existingChatIndex = chats.findIndex(chat => chat._id === data._id);
+
+            if (existingChatIndex !== -1) {
+                // If chat exists, just select it
+                setSelectedChat(chats[existingChatIndex]);
+            } else {
+                // Add the new chat to the chats list and force re-render
+                setChats(prevChats => {
+                    const newChats = [normalizedChat, ...prevChats];
+                    return newChats;
+                });
+
+                // Set as selected chat after a small delay to ensure state update
+                setTimeout(() => {
+                    setSelectedChat(normalizedChat);
+                }, 0);
+            }
+
             handleNewChatModalClose();
+
         } catch (err) {
             console.error("Error starting chat:", err);
+            alert("Failed to start chat. Please try again.");
         }
     };
 
@@ -572,42 +611,45 @@ const ChatPage = () => {
                 />
 
                 <div className="chats-list">
-                    {getFilteredChats().map((chat) => (
-                        <div
-                            key={chat._id}
-                            className={`chat-item ${
-                                selectedChat?._id === chat._id && !isSelectionMode ? "selected" : ""
-                            } ${selectedChatsForDeletion.includes(chat._id) ? "selected-for-deletion" : ""}`}
-                            onClick={() => handleChatSingleClick(chat)}
-                            onDoubleClick={() => handleChatDoubleClick(chat._id)}
-                            onMouseDown={(e) => handleMouseDown(e, chat)}
-                            onMouseUp={handleMouseUp}
-                            onMouseLeave={handleMouseLeave}
-                            onTouchStart={(e) => handleTouchStart(e, chat)}
-                            onTouchEnd={handleTouchEnd}
-                        >
-                            {selectedChatsForDeletion.includes(chat._id) && (
-                                <div className="selection-indicator">
-                                    ✓
+                    {getFilteredChats().map((chat) => {
+                        console.log('Rendering chat:', chat.withUserName || chat.chatName); // Debug log
+                        return (
+                            <div
+                                key={chat._id}
+                                className={`chat-item ${
+                                    selectedChat?._id === chat._id && !isSelectionMode ? "selected" : ""
+                                } ${selectedChatsForDeletion.includes(chat._id) ? "selected-for-deletion" : ""}`}
+                                onClick={() => handleChatSingleClick(chat)}
+                                onDoubleClick={() => handleChatDoubleClick(chat._id)}
+                                onMouseDown={(e) => handleMouseDown(e, chat)}
+                                onMouseUp={handleMouseUp}
+                                onMouseLeave={handleMouseLeave}
+                                onTouchStart={(e) => handleTouchStart(e, chat)}
+                                onTouchEnd={handleTouchEnd}
+                            >
+                                {selectedChatsForDeletion.includes(chat._id) && (
+                                    <div className="selection-indicator">
+                                        ✓
+                                    </div>
+                                )}
+                                <div className="chat-avatar">
+                                    <img
+                                        src="https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop"
+                                        alt="Chat Avatar"
+                                        className="chat-avatar-image"
+                                    />
                                 </div>
-                            )}
-                            <div className="chat-avatar">
-                                <img
-                                    src="https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop"
-                                    alt="Chat Avatar"
-                                    className="chat-avatar-image"
-                                />
+                                <div className="chat-content">
+                                    <div className="chat-header">
+                                        <strong>{getChatName(chat)}</strong>
+                                    </div>
+                                    <div className="latest-message">
+                                        {getLatestMessage(chat)}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="chat-content">
-                                <div className="chat-header">
-                                    <strong>{getChatName(chat)}</strong>
-                                </div>
-                                <div className="latest-message">
-                                    {getLatestMessage(chat)}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 
@@ -688,7 +730,6 @@ const ChatPage = () => {
                                 </button>
                             </div>
                             {errorMsg && <div className="secret-error-msg">{errorMsg}</div>}
-
 
                             <div className="secret-button-group">
                                 <button
@@ -845,6 +886,33 @@ const ChatPage = () => {
                                 >
                                     Cancel
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Profile Image Modal */}
+            {isProfileImageModalOpen && (
+                <div className="modal-backdrop">
+                    <div className="modal-container">
+                        <div className="profile-image-modal-content">
+                            <button
+                                className="modal-close-icon"
+                                onClick={handleProfileImageModalClose}
+                            >
+                                &times;
+                            </button>
+                            <div className="profile-image-container">
+                                <img
+                                    src={
+                                        base64Image
+                                            ? `data:image/jpeg;base64,${base64Image}`
+                                            : "https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&dpr=2"
+                                    }
+                                    alt="Profile"
+                                    className="profile-image-large"
+                                />
                             </div>
                         </div>
                     </div>
