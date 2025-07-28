@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import EmojiPicker from 'emoji-picker-react';
+import { encodeText, decodeText } from '../utilities/textEncoder';
 import "./ChatBox.css";
 
 const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
@@ -31,8 +32,12 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
         setCurrentUser(userInfo);
         if (!selectedChat) return;
 
-        // Handle both new chats and existing chats
-        setMessages(selectedChat.messages || []);
+        // Handle both new chats and existing chats - decode messages
+        const decodedMessages = (selectedChat.messages || []).map(message => ({
+            ...message,
+            text: message.text ? decodeText(message.text) : message.text
+        }));
+        setMessages(decodedMessages);
         // Socket functionality can be added later
     }, [selectedChat]);
 
@@ -84,10 +89,13 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
         if (!newMsg.trim()) return;
 
         try {
+            // Encode the message text before sending
+            const encodedText = encodeText(newMsg);
+
             const messageData = {
                 senderId: currentUser._id,
                 withUserId: selectedChat.withUserId?._id || selectedChat.withUserId,
-                text: newMsg,
+                text: encodedText, // Send encoded text
                 attachments: attachments,
                 scheduledFor: showScheduler && scheduledDate && scheduledTime
                     ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
@@ -108,7 +116,13 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
                 }
             );
 
-            setMessages((prev) => [...prev, data.newMessage]);
+            // Decode the message before adding to local state
+            const decodedMessage = {
+                ...data.newMessage,
+                text: decodeText(data.newMessage.text)
+            };
+
+            setMessages((prev) => [...prev, decodedMessage]);
             setNewMsg("");
             setAttachments([]);
             setShowScheduler(false);
@@ -401,10 +415,13 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
                     const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
                     const locationText = `📍 My Location\n${mapsUrl}\n(Accuracy: ~${Math.round(accuracy)}m)`;
 
+                    // Encode the location text before sending
+                    const encodedLocationText = encodeText(locationText);
+
                     const messageData = {
                         senderId: currentUser._id,
                         withUserId: selectedChat.withUserId?._id || selectedChat.withUserId,
-                        text: locationText,
+                        text: encodedLocationText, // Send encoded location text
                         attachments: [],
                         isLocation: true,
                         locationData: {
@@ -423,7 +440,13 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
                         }
                     );
 
-                    setMessages((prev) => [...prev, data.newMessage]);
+                    // Decode the message before adding to local state
+                    const decodedMessage = {
+                        ...data.newMessage,
+                        text: decodeText(data.newMessage.text)
+                    };
+
+                    setMessages((prev) => [...prev, decodedMessage]);
                     setIsGettingLocation(false);
                 } catch (err) {
                     console.error("Error sending location:", err);
@@ -556,7 +579,7 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
                                     {senderName}
                                 </div>
                                 <div className="classic-message-content">
-                                    {m.text}
+                                    {m.text || ''}
                                 </div>
                                 {/* Render location messages with clickable links */}
                                 {m.isLocation && m.locationData && (
