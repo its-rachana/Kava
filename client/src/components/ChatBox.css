@@ -1,3 +1,4 @@
+
 .classic-chat-container {
     height: 100%;
     display: flex;
@@ -34,7 +35,7 @@
     align-items: center;
     margin-bottom: 24px;
     padding: 16px 0;
-    justify-content: flex-start;
+    justify-content: space-between;
 }
 
 .chat-header-left {
@@ -121,6 +122,36 @@
     color: var(--text-secondary);
     font-weight: 500;
     opacity: 0.8;
+}
+
+/* Close Chat Button */
+.close-chat-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.close-chat-btn:hover {
+    background: rgba(255, 71, 87, 0.1);
+    border-color: rgba(255, 71, 87, 0.3);
+    color: #ff4757;
+    transform: scale(1.1);
+}
+
+.close-chat-btn:active {
+    transform: scale(0.95);
 }
 
 /* Profile Modal */
@@ -898,6 +929,12 @@
 
     .profile-modal-info h3 {
         font-size: 24px;
+    }
+
+    .close-chat-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 20px;
     }
 
     .input-actions-bar {

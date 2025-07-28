@@ -45,6 +45,9 @@ function Register() {
   const [userMessage, setUserMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
+  // Validation states
+  const [validationErrors, setValidationErrors] = useState({});
+
   const navigate = useNavigate();
 
   // Time-based theming system
@@ -150,17 +153,100 @@ function Register() {
   };
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
+
+    // Clear validation errors when user types
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+
     setErrorMessage(""); // Clear error when user types
+  };
+
+  // Validation functions
+  const validateDateOfBirth = (dob) => {
+    if (!dob) {
+      return "Date of birth is required";
+    }
+
+    const birthDate = new Date(dob);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    // Check if date is valid
+    if (isNaN(birthDate.getTime())) {
+      return "Please enter a valid date";
+    }
+
+    // Check if date is in the future
+    if (birthDate > today) {
+      return "Date of birth cannot be in the future";
+    }
+
+    // Check minimum age (13 years)
+    const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())
+        ? age - 1
+        : age;
+
+    if (actualAge < 13) {
+      return "You must be at least 13 years old to register";
+    }
+
+    // Check maximum age (120 years)
+    if (actualAge > 120) {
+      return "Please enter a valid date of birth";
+    }
+
+    return "";
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    // Validate date of birth
+    const dobError = validateDateOfBirth(formData.dob);
+    if (dobError) {
+      errors.dob = dobError;
+    }
+
+    // Add other validations as needed
+    if (!formData.name.trim()) {
+      errors.name = "Name is required";
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    }
+
+    if (!formData.password.trim()) {
+      errors.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      errors.password = "Password must be at least 6 characters long";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
     setShowLoginRedirect(false);
+
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -199,6 +285,13 @@ function Register() {
     if (lowerMessage.includes('secret key') || lowerMessage.includes('optional')) {
       return {
         message: "The secret key is optional and can be used for additional security. You can leave it blank if you don't need this feature.",
+        actions: []
+      };
+    }
+
+    if (lowerMessage.includes('age') || lowerMessage.includes('date of birth') || lowerMessage.includes('dob')) {
+      return {
+        message: "You must be at least 13 years old to register. Please enter your correct date of birth using the date picker.",
         actions: []
       };
     }
@@ -354,6 +447,12 @@ function Register() {
                     disabled={isLoading}
                 />
               </div>
+              {validationErrors.name && (
+                  <div className="field-error">
+                    <AlertCircle size={14} />
+                    <span>{validationErrors.name}</span>
+                  </div>
+              )}
             </div>
 
             <div className="input-group animate-slide-in-delayed-2">
@@ -372,6 +471,12 @@ function Register() {
                     disabled={isLoading}
                 />
               </div>
+              {validationErrors.email && (
+                  <div className="field-error">
+                    <AlertCircle size={14} />
+                    <span>{validationErrors.email}</span>
+                  </div>
+              )}
             </div>
 
             <div className="input-group animate-slide-in-delayed-3">
@@ -398,6 +503,12 @@ function Register() {
                   {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
                 </button>
               </div>
+              {validationErrors.password && (
+                  <div className="field-error">
+                    <AlertCircle size={14} />
+                    <span>{validationErrors.password}</span>
+                  </div>
+              )}
             </div>
 
             <div className="input-group animate-slide-in-delayed-4">
@@ -418,21 +529,35 @@ function Register() {
                 Optional: Used for accessing hidden chats
               </div>
             </div>
+
             <div className="input-group animate-slide-in-delayed-5">
               <div className="input-wrapper">
                 <div className="input-icon">
-                  <Key size={20}/>
+                  <User size={20}/>
                 </div>
                 <input
-                    name="dateOfBirth"
-                    placeholder="Enter your date of birth"
+                    name="dob"
+                    placeholder="Select your date of birth"
                     value={formData.dob}
                     onChange={handleChange}
+                    type="date"
                     className="form-input"
                     disabled={isLoading}
+                    required
+                    max={new Date().toISOString().split('T')[0]}
                 />
               </div>
+              <div className="input-hint">
+                You must be at least 13 years old to register
+              </div>
+              {validationErrors.dob && (
+                  <div className="field-error">
+                    <AlertCircle size={14} />
+                    <span>{validationErrors.dob}</span>
+                  </div>
+              )}
             </div>
+
             {errorMessage && (
                 <div className="error-message animate-shake">
                   <div className="error-content">

@@ -2,72 +2,29 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "./SecretSidebar.css";
+import ThemeToggle from "./ThemeToggle";
+import { useTheme } from "../hooks/useTheme";
 
 const SecretSidebar = ({ onSelectUser, selectedUserInfo, fetchChats, updateSelectedUserInfo }) => {
     const [show, setShow] = useState(false);
     const [users, setUsers] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedChat, setSelectedChat] = useState(null);
-    const [currentTime, setCurrentTime] = useState(new Date());
-    const [theme, setTheme] = useState(() => {
-        return localStorage.getItem('secretChatTheme') || 'time';
-    });
     const [longPressTimer, setLongPressTimer] = useState(null);
     const [showMoveModal, setShowMoveModal] = useState(false);
     const [selectedChatToMove, setSelectedChatToMove] = useState(null);
     const navigate = useNavigate();
     const currentUser = JSON.parse(localStorage.getItem("userInfo"))._id;
 
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 60000);
-        return () => clearInterval(timer);
-    }, []);
-
-    useEffect(() => {
-        document.body.className = `theme-${theme}`;
-        localStorage.setItem('secretChatTheme', theme);
-    }, [theme]);
-
-    const getTimeBasedIcon = () => {
-        const hour = currentTime.getHours();
-        if (hour >= 6 && hour < 12) return "🌅"; // Morning
-        if (hour >= 12 && hour < 17) return "☀️"; // Afternoon
-        if (hour >= 17 && hour < 20) return "🌆"; // Evening
-        return "🌙"; // Night
-    };
-
-    const getThemeIcon = () => {
-        switch (theme) {
-            case 'light':
-                return "☀️";
-            case 'dark':
-                return "🌙";
-            case 'time':
-            default:
-                return getTimeBasedIcon();
-        }
-    };
-
-    const getThemeLabel = () => {
-        switch (theme) {
-            case 'light':
-                return "Light Theme";
-            case 'dark':
-                return "Dark Theme";
-            case 'time':
-            default:
-                return `Time Theme: ${getTimeBasedIcon()}`;
-        }
-    };
-
-    const cycleTheme = () => {
-        const themes = ['time', 'light', 'dark'];
-        const currentIndex = themes.indexOf(theme);
-        const nextIndex = (currentIndex + 1) % themes.length;
-        setTheme(themes[nextIndex]);
-    };
+    const {
+        themeMode,
+        isDarkMode,
+        timeBasedTheme,
+        cycleTheme,
+        getThemeClasses,
+        getThemeIcon,
+        getThemeLabel
+    } = useTheme();
 
     const fetchAllUsers = async () => {
         try {
@@ -181,7 +138,7 @@ const SecretSidebar = ({ onSelectUser, selectedUserInfo, fetchChats, updateSelec
     };
 
     return (
-        <div>
+        <div className={`secret-sidebar-container ${getThemeClasses()}`}>
             <div className="secret-sidebar-profile-actions">
                 <button onClick={() => navigate("/chats")} className="secret-sidebar-back-button">
                     💬 Go Back to Chats
@@ -189,9 +146,12 @@ const SecretSidebar = ({ onSelectUser, selectedUserInfo, fetchChats, updateSelec
                 <button onClick={() => navigate("/profile")} className="secret-sidebar-profile-button">
                     👤 Profile
                 </button>
-                <button onClick={cycleTheme} className="secret-sidebar-theme-button" title={getThemeLabel()}>
-                    {getThemeIcon()}
-                </button>
+                <ThemeToggle
+                    themeMode={themeMode}
+                    onToggle={cycleTheme}
+                    getThemeIcon={getThemeIcon}
+                    getThemeLabel={getThemeLabel}
+                />
             </div>
 
             <div className="secret-sidebar-chat-header">
@@ -203,74 +163,82 @@ const SecretSidebar = ({ onSelectUser, selectedUserInfo, fetchChats, updateSelec
                 </button>
             </div>
 
-            {selectedUserInfo.map((conversation) => (
-                <div
-                    key={conversation.withUserId}
-                    onClick={() => handleSidebarChatClick(conversation)}
-                    onMouseDown={() => handleLongPressStart(conversation)}
-                    onMouseUp={handleLongPressEnd}
-                    onMouseLeave={handleLongPressEnd}
-                    onTouchStart={() => handleLongPressStart(conversation)}
-                    onTouchEnd={handleLongPressEnd}
-                    className={`secret-sidebar-chat-item ${selectedChat?.withUserId === conversation.withUserId ? "selected" : ""}`}
-                >
-                    <div className="secret-sidebar-name">
-                        {conversation.withUserName || "Unknown"}
+            <div className="secret-sidebar-chat-list">
+                {selectedUserInfo.map((conversation) => (
+                    <div
+                        key={conversation.withUserId}
+                        onClick={() => handleSidebarChatClick(conversation)}
+                        onMouseDown={() => handleLongPressStart(conversation)}
+                        onMouseUp={handleLongPressEnd}
+                        onMouseLeave={handleLongPressEnd}
+                        onTouchStart={() => handleLongPressStart(conversation)}
+                        onTouchEnd={handleLongPressEnd}
+                        className={`secret-sidebar-chat-item ${selectedChat?.withUserId === conversation.withUserId ? "selected" : ""}`}
+                    >
+                        <div className="secret-sidebar-name">
+                            {conversation.withUserName || "Unknown"}
+                        </div>
+                        <div className="secret-sidebar-preview">
+                            {conversation.messages?.length > 0
+                                ? conversation.messages[conversation.messages.length - 1].text
+                                : "No messages yet"}
+                        </div>
                     </div>
-                    <div className="secret-sidebar-preview">
-                        {conversation.messages?.length > 0
-                            ? conversation.messages[conversation.messages.length - 1].text
-                            : "No messages yet"}
-                    </div>
-                </div>
-            ))}
+                ))}
+            </div>
 
             {show && (
                 <div className="secret-sidebar-modal-overlay">
-                    <h3>Start New Secret Chat</h3>
-                    <button onClick={() => setShow(false)} className="secret-sidebar-modal-close">
-                        &times;
-                    </button>
+                    <div className="secret-sidebar-modal-container">
+                        <div className="secret-sidebar-modal-content">
+                            <button onClick={() => setShow(false)} className="secret-sidebar-modal-close">
+                                &times;
+                            </button>
+                            <h3>Start New Secret Chat</h3>
 
-                    <input
-                        type="text"
-                        placeholder="Search users..."
-                        className="secret-sidebar-search-input"
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+                            <input
+                                type="text"
+                                placeholder="Search users..."
+                                className="secret-sidebar-search-input"
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
 
-                    <div className="secret-sidebar-search-results">
-                        {filteredUsers.map((user) => (
-                            <div key={user._id} onClick={() => handleUserClick(user)} className="secret-sidebar-user-item">
-                                <div>{user.name}</div>
-                                <div className="email">{user.email}</div>
+                            <div className="secret-sidebar-search-results">
+                                {filteredUsers.map((user) => (
+                                    <div key={user._id} onClick={() => handleUserClick(user)} className="secret-sidebar-user-item">
+                                        <div>{user.name}</div>
+                                        <div className="email">{user.email}</div>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
+                        </div>
                     </div>
                 </div>
             )}
 
             {showMoveModal && (
                 <div className="secret-sidebar-modal-overlay">
-                    <div className="secret-sidebar-move-modal">
-                        <h3>Move Chat</h3>
-                        <p>Move this chat back to normal chats?</p>
-                        <div className="secret-sidebar-move-modal-actions">
-                            <button
-                                onClick={moveToNormalChats}
-                                className="secret-sidebar-move-confirm-btn"
-                            >
-                                Move to Normal
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setShowMoveModal(false);
-                                    setSelectedChatToMove(null);
-                                }}
-                                className="secret-sidebar-move-cancel-btn"
-                            >
-                                Cancel
-                            </button>
+                    <div className="secret-sidebar-modal-container">
+                        <div className="secret-sidebar-move-modal">
+                            <h3>Move Chat</h3>
+                            <p>Move this chat back to normal chats?</p>
+                            <div className="secret-sidebar-move-modal-actions">
+                                <button
+                                    onClick={moveToNormalChats}
+                                    className="secret-sidebar-move-confirm-btn"
+                                >
+                                    Move to Normal
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowMoveModal(false);
+                                        setSelectedChatToMove(null);
+                                    }}
+                                    className="secret-sidebar-move-cancel-btn"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

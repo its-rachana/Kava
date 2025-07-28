@@ -34,7 +34,7 @@ const ChatPage = () => {
 
     // Long press functionality
     const [longPressedChat, setLongPressedChat] = useState(null);
-    const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+    const [contextMenuPosition, setContextMenuPosition] = useState({x: 0, y: 0});
     const [showContextMenu, setShowContextMenu] = useState(false);
     const longPressTimer = useRef(null);
 
@@ -92,7 +92,24 @@ const ChatPage = () => {
             return () => document.removeEventListener('click', handleClickOutside);
         }
     }, [showContextMenu]);
+    const fetchAllUsers = async () => {
+        try {
+            const token = JSON.parse(localStorage.getItem("userInfo")).token;
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            };
+            const {data} = await axios.get(process.env.REACT_APP_API_URL + "/api/user", config);
+            setSearchResults(data);
+        } catch (error) {
+        }
+    };
 
+    useEffect(() => {
+        if (isNewChatModalOpen) fetchAllUsers().then(r => {
+        });
+    }, [isNewChatModalOpen]);
     const fetchChats = async (userId) => {
         try {
             const {data} = await axios.get(
@@ -182,10 +199,12 @@ const ChatPage = () => {
         }
         return "No messages yet";
     };
-
-    const handleProfileClick = () => {
+    const handleProfilePictureClick = () => {
         setIsProfileImageModalOpen(true);
         setIsModalOpen(true);
+    }
+    const handleProfileClick = () => {
+        navigate("/profile");
     };
 
     const handleProfileImageModalClose = () => {
@@ -543,7 +562,7 @@ const ChatPage = () => {
                                 }
                                 alt="Profile"
                                 className="profile-picture"
-                                onClick={handleProfileClick}
+                                onClick={handleProfilePictureClick}
                             />
                         </div>
                         <h3>My Chats</h3>
@@ -683,7 +702,7 @@ const ChatPage = () => {
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="context-menu-item" onClick={handleMoveToSecretChats}>
-                        <Shield size={16} />
+                        <Shield size={16}/>
                         <span>Move to Secret Chats</span>
                     </div>
                     <div
@@ -693,7 +712,7 @@ const ChatPage = () => {
                             setLongPressedChat(null);
                         }}
                     >
-                        <X size={16} />
+                        <X size={16}/>
                         <span>Cancel</span>
                     </div>
                 </div>
@@ -751,47 +770,30 @@ const ChatPage = () => {
             )}
 
             {isNewChatModalOpen && (
-                <div className="modal-backdrop">
-                    <div className="modal-container">
-                        <div className="search-modal-content">
+                <div className="chat-page-modal-overlay">
+                    <div className="chat-page-modal-container">
+                        <div className="chat-page-modal-content">
                             <button
-                                className="modal-close-icon"
+                                className="chat-page-modal-close"
                                 onClick={handleNewChatModalClose}
                             >
                                 &times;
                             </button>
-                            <h2>💬 Start New Chat</h2>
-                            <p>Search for users to start a new conversation:</p>
+                            <h3>Start New Secret Chat</h3>
 
-                            <div className="search-input-group">
-                                <input
-                                    type="text"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="Search users by name or email"
-                                    className="search-input"
-                                />
-                                <button
-                                    className="search-btn"
-                                    onClick={() => searchUsers(searchTerm)}
-                                    disabled={searchLoading}
-                                >
-                                    {searchLoading ? "Searching..." : "Search"}
-                                </button>
-                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search users..."
+                                className="chat-page-search-input"
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
 
-                            <div className="search-results">
+                            <div className="chat-page-search-results">
                                 {searchResults.map((user) => (
-                                    <div className="result-card" key={user._id}>
-                                        <span>
-                                            {user.name} ({user.email})
-                                        </span>
-                                        <button
-                                            className="message-btn"
-                                            onClick={() => startChat(user)}
-                                        >
-                                            Message
-                                        </button>
+                                    <div key={user._id} onClick={() => startChat(user)}
+                                         className="chat-page-user-item">
+                                        <div>{user.name}</div>
+                                        <div className="email">{user.email}</div>
                                     </div>
                                 ))}
                             </div>
@@ -846,9 +848,9 @@ const ChatPage = () => {
                                             const user = searchResults.find(u => u._id === userId);
                                             return user ? (
                                                 <span key={userId} className="selected-user-tag">
-                                                    {user.name}
+                                                        {user.name}
                                                     <button onClick={() => toggleUserSelection(userId)}>×</button>
-                                                </span>
+                                                    </span>
                                             ) : null;
                                         })}
                                     </div>
@@ -859,9 +861,9 @@ const ChatPage = () => {
                                 {searchResults.map((user) => (
                                     <div className={`result-card ${selectedUsers.includes(user._id) ? 'selected' : ''}`}
                                          key={user._id}>
-                                        <span>
-                                            {user.name} ({user.email})
-                                        </span>
+                                            <span>
+                                                {user.name} ({user.email})
+                                            </span>
                                         <button
                                             className={`select-btn ${selectedUsers.includes(user._id) ? 'selected' : ''}`}
                                             onClick={() => toggleUserSelection(user._id)}

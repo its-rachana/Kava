@@ -625,6 +625,35 @@ const Profile = () => {
 
     console.log("Profile component rendering, isLoading:", isLoading, "user:", !!user);
 
+    // if (isLoading) {
+    //     return (
+    //         <div className={`profile-container theme-${currentTheme} time-${timeOfDay}`}>
+    //             {/* Atmospheric Elements */}
+    //             <div className="atmospheric-elements">
+    //                 {timeOfDay === 'night' && (
+    //                     <>
+    //                         <div className="stars"></div>
+    //                         <div className="shooting-star"></div>
+    //                     </>
+    //                 )}
+    //                 {timeOfDay === 'dawn' && (
+    //                     <div className="sunrise-rays"></div>
+    //                 )}
+    //                 {timeOfDay === 'dusk' && (
+    //                     <div className="dusk-clouds"></div>
+    //                 )}
+    //                 {(timeOfDay === 'morning' || timeOfDay === 'afternoon') && (
+    //                     <div className="day-particles"></div>
+    //                 )}
+    //             </div>
+    //
+    //             <div className="loading-spinner animate-fade-in">
+    //                 <div className="spinner"></div>
+    //                 <p>Loading your profile...</p>
+    //             </div>
+    //         </div>
+    //     );
+    // }
     if (isLoading) {
         return (
             <div className={`profile-container theme-${currentTheme} time-${timeOfDay}`}>
@@ -646,15 +675,26 @@ const Profile = () => {
                         <div className="day-particles"></div>
                     )}
                 </div>
-
-                <div className="loading-spinner animate-fade-in">
-                    <div className="spinner"></div>
-                    <p>Loading your profile...</p>
+                {/* Full-Screen Loading Overlay */}
+                <div className="loading-overlay">
+                    <div className="loading-backdrop"></div>
+                    <div className="loading-content">
+                        <div className="loading-card">
+                            <div className="loading-animation">
+                                <div className="loading-circle loading-circle-1"></div>
+                                <div className="loading-circle loading-circle-2"></div>
+                                <div className="loading-circle loading-circle-3"></div>
+                            </div>
+                            <h3 className="loading-title">Loading Your Profile</h3>
+                            <p className="loading-subtitle">
+                                Fetching your account information and preferences...
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
-
     if (!user) {
         return (
             <div className={`profile-container theme-${currentTheme} time-${timeOfDay}`}>
@@ -729,7 +769,8 @@ const Profile = () => {
                     Back to Chats
                 </button>
                 <h1>Profile Settings</h1>
-                <button onClick={handleSignOut} className="back-button" style={{background: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.2)'}}>
+                <button onClick={handleSignOut} className="back-button"
+                        style={{background: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.2)'}}>
                     <LogOut size={20}/>
                     Sign Out
                 </button>
@@ -847,7 +888,8 @@ const Profile = () => {
                                             disabled={isUpdatingDisplayName}
                                             className="btn btn-primary"
                                         >
-                                            {isUpdatingDisplayName ? <div className="btn-spinner"></div> : <Save size={16}/>}
+                                            {isUpdatingDisplayName ? <div className="btn-spinner"></div> :
+                                                <Save size={16}/>}
                                             Save
                                         </button>
                                     )}
@@ -898,7 +940,8 @@ const Profile = () => {
                                             disabled={isUpdatingPassword}
                                             className="btn btn-primary"
                                         >
-                                            {isUpdatingPassword ? <div className="btn-spinner"></div> : <Save size={16}/>}
+                                            {isUpdatingPassword ? <div className="btn-spinner"></div> :
+                                                <Save size={16}/>}
                                             Save
                                         </button>
                                     )}
@@ -1010,53 +1053,54 @@ const Profile = () => {
                             </button>
                         </div>
                     </div>
+                    <div className="security-section animate-slide-in-delayed-3">
+                        <div className="section-header">
+                            <div className="info-icon">
+                                <Shield size={20}/>
+                            </div>
+                            <div className="section-content">
+                                <h3>Security Settings</h3>
+                                <p>Manage your account security preferences</p>
+                            </div>
+                        </div>
+
+                        <div className="security-option">
+                            <div className="security-option-info">
+                                <div className="security-icon">
+                                    <Smartphone size={18}/>
+                                </div>
+                                <div className="security-details">
+                                    <h4>Two-Factor Authentication</h4>
+                                    <p>Add an extra layer of security to your account with SMS or email verification</p>
+                                </div>
+                            </div>
+                            <div className="security-toggle">
+                                <button
+                                    className={`toggle-switch ${twoFactorEnabled ? 'enabled' : 'disabled'}`}
+                                    onClick={toggle2FA}
+                                    disabled={isToggling2FA}
+                                    aria-label={`${twoFactorEnabled ? 'Disable' : 'Enable'} two-factor authentication`}
+                                >
+                                    <div className="toggle-slider">
+                                        {isToggling2FA ? (
+                                            <div className="toggle-spinner"></div>
+                                        ) : (
+                                            <div className="toggle-icon">
+                                                {twoFactorEnabled ? <Lock size={12}/> : <Smartphone size={12}/>}
+                                            </div>
+                                        )}
+                                    </div>
+                                </button>
+                                <span className="toggle-label">
+                                {twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Security Settings Section */}
-                <div className="security-section animate-slide-in-delayed-3">
-                    <div className="section-header">
-                        <div className="info-icon">
-                            <Shield size={20}/>
-                        </div>
-                        <div className="section-content">
-                            <h3>Security Settings</h3>
-                            <p>Manage your account security preferences</p>
-                        </div>
-                    </div>
 
-                    <div className="security-option">
-                        <div className="security-option-info">
-                            <div className="security-icon">
-                                <Smartphone size={18}/>
-                            </div>
-                            <div className="security-details">
-                                <h4>Two-Factor Authentication</h4>
-                                <p>Add an extra layer of security to your account with SMS or email verification</p>
-                            </div>
-                        </div>
-                        <div className="security-toggle">
-                            <button
-                                className={`toggle-switch ${twoFactorEnabled ? 'enabled' : 'disabled'}`}
-                                onClick={toggle2FA}
-                                disabled={isToggling2FA}
-                                aria-label={`${twoFactorEnabled ? 'Disable' : 'Enable'} two-factor authentication`}
-                            >
-                                <div className="toggle-slider">
-                                    {isToggling2FA ? (
-                                        <div className="toggle-spinner"></div>
-                                    ) : (
-                                        <div className="toggle-icon">
-                                            {twoFactorEnabled ? <Lock size={12}/> : <Smartphone size={12}/>}
-                                        </div>
-                                    )}
-                                </div>
-                            </button>
-                            <span className="toggle-label">
-                                {twoFactorEnabled ? 'Enabled' : 'Disabled'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
 
                 {/* Message Display */}
                 {message.text && (

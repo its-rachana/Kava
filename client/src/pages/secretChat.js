@@ -45,7 +45,7 @@ const SecretChat = () => {
 
     return (
         <div className="secret-chat-container">
-            <div className="secret-chat-sidebar-container">
+            <div>
                 {isLoading ? (
                     <div>Loading conversations...</div>
                 ) : (

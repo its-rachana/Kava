@@ -480,11 +480,31 @@ body.theme-dark {
 
 /* Input Hint */
 .input-hint {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
     margin-top: 0.25rem;
-    padding-left: 0.5rem;
-    font-style: italic;
+    opacity: 0.8;
+}
+
+/* Field Error Validation */
+.field-error {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 0.375rem;
+    color: #dc2626;
+    font-size: 0.75rem;
+    animation: shake 0.3s ease-in-out;
+}
+
+.theme-dark .field-error {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
 }
 
 /* Error Message */
