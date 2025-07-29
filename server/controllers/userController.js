@@ -294,6 +294,7 @@ const userLogin = asyncHandler(async (req, res) => {
         secretKey: user.secretKey,
         twoFactorEnabled:user.twoFactorEnabled,
         token,
+        gender:user.gender
     });
 })
 

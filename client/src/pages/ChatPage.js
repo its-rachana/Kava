@@ -55,6 +55,8 @@ const ChatPage = () => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
 
     useEffect(() => {
+        console.log("ion chatpage")
+        console.log(userInfo)
         setCurrentUser(userInfo);
         // Fix profile image display
         if (userInfo?.profilePhoto?.data) {
@@ -548,388 +550,392 @@ const ChatPage = () => {
     }, [searchTerm]);
 
     const isSelectionMode = selectedChatsForDeletion.length > 0;
+    if (currentUser) {
+        return (
 
-    return (
-        <div className={`chat-container ${getThemeClasses()} ${isModalOpen ? 'modal-blur' : ''}`}>
-            <div className="chat-sidebar">
-                <div className="sidebar-header">
-                    <div className="header-left">
-                        <div className="profile-picture-container">
-                            <img
-                                src={
-                                    base64Image
-                                        ? `data:image/jpeg;base64,${base64Image}`
-                                        : currentUser.gender === "female" ? "femaleIcon.jpg" : "maleIcon.jpg"
-                                }
-                                alt="Profile"
-                                className="profile-picture"
-                                onClick={handleProfilePictureClick}
-                            />
-                        </div>
-                        <h3>My Chats</h3>
-                    </div>
-                    <div className="header-controls">
-                        <ThemeToggle
-                            themeMode={themeMode}
-                            onToggle={cycleTheme}
-                            getThemeIcon={getThemeIcon}
-                            getThemeLabel={getThemeLabel}
-                        />
-                        <button
-                            className="profile-button"
-                            onClick={handleProfileClick}
-                        >
-                            Profile
-                        </button>
-                    </div>
-                </div>
-
-                {isSelectionMode && (
-                    <div className="selection-info-bar">
-                        <div className="selection-count">
-                            <span>{selectedChatsForDeletion.length} selected</span>
-                        </div>
-                        <div className="selection-actions">
-                            <button
-                                className="delete-button"
-                                onClick={deleteSelectedChats}
-                                title="Delete selected chats"
-                            >
-                                <Trash2 size={18}/>
-                            </button>
-                            <button
-                                className="cancel-selection-button"
-                                onClick={clearSelection}
-                                title="Cancel selection"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                <div className="group-buttons-row">
-                    <button className="group-btn" onClick={handleCreateGroup}>
-                        Create Group
-                    </button>
-                    <button className="group-btn" onClick={handleNewChat}>
-                        New Chat
-                    </button>
-                    <button className="open-btn" onClick={handleSecretChats} disabled={!secretKey}
-                            title={!secretKey ? "Secret key not found. Please visit your Profile to set it up." : ""}>
-                        Secret Chats
-                    </button>
-                </div>
-
-                <SearchUsers
-                    onChatCreated={handleChatCreated}
-                    currentChats={chats}
-                    changeCurrentChats={setChats}
-                    onModalOpen={() => setIsModalOpen(true)}
-                    onModalClose={() => setIsModalOpen(false)}
-                    onSearchChange={handleChatFilterChange}
-                />
-
-                <div className="chats-list">
-                    {getFilteredChats().map((chat) => {
-                        console.log('Rendering chat:', chat.withUserName || chat.chatName); // Debug log
-                        return (
-                            <div
-                                key={chat._id}
-                                className={`chat-item ${
-                                    selectedChat?._id === chat._id && !isSelectionMode ? "selected" : ""
-                                } ${selectedChatsForDeletion.includes(chat._id) ? "selected-for-deletion" : ""}`}
-                                onClick={() => handleChatSingleClick(chat)}
-                                onDoubleClick={() => handleChatDoubleClick(chat._id)}
-                                onMouseDown={(e) => handleMouseDown(e, chat)}
-                                onMouseUp={handleMouseUp}
-                                onMouseLeave={handleMouseLeave}
-                                onTouchStart={(e) => handleTouchStart(e, chat)}
-                                onTouchEnd={handleTouchEnd}
-                            >
-                                {selectedChatsForDeletion.includes(chat._id) && (
-                                    <div className="selection-indicator">
-                                        ✓
-                                    </div>
-                                )}
-                                <div className="chat-avatar">
-                                    <img
-                                        src={chat.profilePhoto ?
-                                            chat.profilePhoto :
-                                            chat.gender === "female" ? "femaleIcon.png" : "maleIcon.png" }
-                                        alt="Chat Avatar"
-                                        className="chat-avatar-image"
-                                    />
-                                </div>
-                                <div className="chat-content">
-                                    <div className="chat-header">
-                                        <strong>{getChatName(chat)}</strong>
-                                    </div>
-                                    <div className="latest-message">
-                                        {getLatestMessage(chat)}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            <div className="chat-box-area">
-                {selectedChat ? (
-                    <ChatBox
-                        selectedChat={selectedChat}
-                        refreshChats={fetchChats}
-                        setSelectedChat={setSelectedChat}
-                    />
-                ) : (
-                    <div className="empty-chat-message">
-                        <h3>Welcome to Chat!</h3>
-                        <p>Select a chat from the sidebar to start messaging</p>
-                        <p className="selection-hint">💡 Double-click on any chat to select it for deletion</p>
-                        <p className="selection-hint">🔒 Long-press on any chat to move it to secret chats</p>
-                    </div>
-                )}
-            </div>
-
-            {/* Context Menu for Long Press */}
-            {showContextMenu && longPressedChat && (
-                <div
-                    className="context-menu"
-                    style={{
-                        position: 'fixed',
-                        left: `${contextMenuPosition.x}px`,
-                        top: `${contextMenuPosition.y}px`,
-                        zIndex: 10001
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="context-menu-item" onClick={handleMoveToSecretChats}>
-                        <Shield size={16}/>
-                        <span>Move to Secret Chats</span>
-                    </div>
-                    <div
-                        className="context-menu-item context-menu-close"
-                        onClick={() => {
-                            setShowContextMenu(false);
-                            setLongPressedChat(null);
-                        }}
-                    >
-                        <X size={16}/>
-                        <span>Cancel</span>
-                    </div>
-                </div>
-            )}
-
-            {isSecretModalOpen && (
-                <div className="modal-backdrop">
-                    <div className="modal-container">
-                        <div className="secret-modal-content">
-                            <button
-                                className="secret-close-icon"
-                                onClick={handleSecretModalClose}
-                            >
-                                &times;
-                            </button>
-                            <h2>🔐 Secret Chats</h2>
-                            <p>Please enter your secret key to open the secret chats:</p>
-
-                            <div className="secret-input-container">
-                                <input
-                                    type={showSecretKey ? "text" : "password"}
-                                    placeholder="Enter secret key"
-                                    value={userSecretKey}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            handleSecretKeySubmit();
-                                        }
-                                    }}
-                                    onChange={(e) => setUserSecretKey(e.target.value)}
-                                    className="secret-input"
-                                />
-                                <button
-                                    type="button"
-                                    className="secret-toggle-btn"
-                                    onClick={() => setShowSecretKey(!showSecretKey)}
-                                    title={showSecretKey ? "Hide secret key" : "Show secret key"}
-                                >
-                                    {showSecretKey ? <EyeOff size={20}/> : <Eye size={20}/>}
-                                </button>
-                            </div>
-                            {errorMsg && <div className="secret-error-msg">{errorMsg}</div>}
-
-                            <div className="secret-button-group">
-                                <button
-                                    className="secret-submit-btn"
-                                    onClick={handleSecretKeySubmit}
-                                >
-                                    Unlock
-                                </button>
-                                <button
-                                    className="secret-close-btn"
-                                    onClick={handleSecretModalClose}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {isNewChatModalOpen && (
-                <div className="chat-page-modal-overlay">
-                    <div className="chat-page-modal-container">
-                        <div className="chat-page-modal-content">
-                            <button
-                                className="chat-page-modal-close"
-                                onClick={handleNewChatModalClose}
-                            >
-                                &times;
-                            </button>
-                            <h3>Start New Chat</h3>
-
-                            <input
-                                type="text"
-                                placeholder="Search users..."
-                                className="chat-page-search-input"
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-
-                            <div className="chat-page-search-results">
-                                {searchResults.map((user) => (
-                                    <div key={user._id} onClick={() => startChat(user)}
-                                         className="chat-page-user-item">
-                                        <div>{user.name}</div>
-                                        <div className="email">{user.email}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {isCreateGroupModalOpen && (
-                <div className="modal-backdrop">
-                    <div className="modal-container">
-                        <div className="group-modal-content">
-                            <button
-                                className="modal-close-icon"
-                                onClick={handleCreateGroupModalClose}
-                            >
-                                &times;
-                            </button>
-                            <h2>👥 Create Group Chat</h2>
-                            <p>Enter group name and select users to add:</p>
-
-                            <input
-                                type="text"
-                                value={groupName}
-                                onChange={(e) => setGroupName(e.target.value)}
-                                placeholder="Enter group name"
-                                className="group-name-input"
-                            />
-
-                            <div className="search-input-group">
-                                <input
-                                    type="text"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="Search users by name or email"
-                                    className="search-input"
-                                />
-                                <button
-                                    className="search-btn"
-                                    onClick={() => searchUsers(searchTerm)}
-                                    disabled={searchLoading}
-                                >
-                                    {searchLoading ? "Searching..." : "Search"}
-                                </button>
-                            </div>
-
-                            {selectedUsers.length > 0 && (
-                                <div className="selected-users">
-                                    <h4>Selected Users ({selectedUsers.length}):</h4>
-                                    <div className="selected-users-list">
-                                        {selectedUsers.map(userId => {
-                                            const user = searchResults.find(u => u._id === userId);
-                                            return user ? (
-                                                <span key={userId} className="selected-user-tag">
-                                                        {user.name}
-                                                    <button onClick={() => toggleUserSelection(userId)}>×</button>
-                                                    </span>
-                                            ) : null;
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="search-results">
-                                {searchResults.map((user) => (
-                                    <div className={`result-card ${selectedUsers.includes(user._id) ? 'selected' : ''}`}
-                                         key={user._id}>
-                                            <span>
-                                                {user.name} ({user.email})
-                                            </span>
-                                        <button
-                                            className={`select-btn ${selectedUsers.includes(user._id) ? 'selected' : ''}`}
-                                            onClick={() => toggleUserSelection(user._id)}
-                                        >
-                                            {selectedUsers.includes(user._id) ? "Remove" : "Add"}
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="group-button-group">
-                                <button
-                                    className="create-group-btn"
-                                    onClick={createGroupChat}
-                                    disabled={groupName.trim() === "" || selectedUsers.length === 0}
-                                >
-                                    Create Group
-                                </button>
-                                <button
-                                    className="cancel-btn"
-                                    onClick={handleCreateGroupModalClose}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Profile Image Modal */}
-            {isProfileImageModalOpen && (
-                <div className="modal-backdrop">
-                    <div className="modal-container">
-                        <div className="profile-image-modal-content">
-                            <button
-                                className="modal-close-icon"
-                                onClick={handleProfileImageModalClose}
-                            >
-                                &times;
-                            </button>
-                            <div className="profile-image-container">
+            <div className={`chat-container ${getThemeClasses()} ${isModalOpen ? 'modal-blur' : ''}`}>
+                <div className="chat-sidebar">
+                    <div className="sidebar-header">
+                        <div className="header-left">
+                            <div className="profile-picture-container">
                                 <img
                                     src={
                                         base64Image
                                             ? `data:image/jpeg;base64,${base64Image}`
-                                            : "https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&dpr=2"
+                                            : currentUser.gender === "female" ? "femaleIcon.jpg" : "maleIcon.jpg"
                                     }
                                     alt="Profile"
-                                    className="profile-image-large"
+                                    className="profile-picture"
+                                    onClick={handleProfilePictureClick}
                                 />
+                            </div>
+                            <h3>My Chats</h3>
+                        </div>
+                        <div className="header-controls">
+                            <ThemeToggle
+                                themeMode={themeMode}
+                                onToggle={cycleTheme}
+                                getThemeIcon={getThemeIcon}
+                                getThemeLabel={getThemeLabel}
+                            />
+                            <button
+                                className="profile-button"
+                                onClick={handleProfileClick}
+                            >
+                                Profile
+                            </button>
+                        </div>
+                    </div>
+
+                    {isSelectionMode && (
+                        <div className="selection-info-bar">
+                            <div className="selection-count">
+                                <span>{selectedChatsForDeletion.length} selected</span>
+                            </div>
+                            <div className="selection-actions">
+                                <button
+                                    className="delete-button"
+                                    onClick={deleteSelectedChats}
+                                    title="Delete selected chats"
+                                >
+                                    <Trash2 size={18}/>
+                                </button>
+                                <button
+                                    className="cancel-selection-button"
+                                    onClick={clearSelection}
+                                    title="Cancel selection"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="group-buttons-row">
+                        <button className="group-btn" onClick={handleCreateGroup}>
+                            Create Group
+                        </button>
+                        <button className="group-btn" onClick={handleNewChat}>
+                            New Chat
+                        </button>
+                        <button className="open-btn" onClick={handleSecretChats} disabled={!secretKey}
+                                title={!secretKey ? "Secret key not found. Please visit your Profile to set it up." : ""}>
+                            Secret Chats
+                        </button>
+                    </div>
+
+                    <SearchUsers
+                        onChatCreated={handleChatCreated}
+                        currentChats={chats}
+                        changeCurrentChats={setChats}
+                        onModalOpen={() => setIsModalOpen(true)}
+                        onModalClose={() => setIsModalOpen(false)}
+                        onSearchChange={handleChatFilterChange}
+                    />
+
+                    <div className="chats-list">
+                        {getFilteredChats().map((chat) => {
+                            console.log('Rendering chat:', chat.withUserName || chat.chatName); // Debug log
+                            return (
+                                <div
+                                    key={chat._id}
+                                    className={`chat-item ${
+                                        selectedChat?._id === chat._id && !isSelectionMode ? "selected" : ""
+                                    } ${selectedChatsForDeletion.includes(chat._id) ? "selected-for-deletion" : ""}`}
+                                    onClick={() => handleChatSingleClick(chat)}
+                                    onDoubleClick={() => handleChatDoubleClick(chat._id)}
+                                    onMouseDown={(e) => handleMouseDown(e, chat)}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseLeave}
+                                    onTouchStart={(e) => handleTouchStart(e, chat)}
+                                    onTouchEnd={handleTouchEnd}
+                                >
+                                    {selectedChatsForDeletion.includes(chat._id) && (
+                                        <div className="selection-indicator">
+                                            ✓
+                                        </div>
+                                    )}
+                                    <div className="chat-avatar">
+                                        <img
+                                            src={chat.profilePhoto ?
+                                                chat.profilePhoto :
+                                                chat.gender === "female" ? "femaleIcon.png" : "maleIcon.png"}
+                                            alt="Chat Avatar"
+                                            className="chat-avatar-image"
+                                        />
+                                    </div>
+                                    <div className="chat-content">
+                                        <div className="chat-header">
+                                            <strong>{getChatName(chat)}</strong>
+                                        </div>
+                                        <div className="latest-message">
+                                            {getLatestMessage(chat)}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                <div className="chat-box-area">
+                    {selectedChat ? (
+                        <ChatBox
+                            selectedChat={selectedChat}
+                            refreshChats={fetchChats}
+                            setSelectedChat={setSelectedChat}
+                        />
+                    ) : (
+                        <div className="empty-chat-message">
+                            <h3>Welcome to Chat!</h3>
+                            <p>Select a chat from the sidebar to start messaging</p>
+                            <p className="selection-hint">💡 Double-click on any chat to select it for deletion</p>
+                            <p className="selection-hint">🔒 Long-press on any chat to move it to secret chats</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Context Menu for Long Press */}
+                {showContextMenu && longPressedChat && (
+                    <div
+                        className="context-menu"
+                        style={{
+                            position: 'fixed',
+                            left: `${contextMenuPosition.x}px`,
+                            top: `${contextMenuPosition.y}px`,
+                            zIndex: 10001
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="context-menu-item" onClick={handleMoveToSecretChats}>
+                            <Shield size={16}/>
+                            <span>Move to Secret Chats</span>
+                        </div>
+                        <div
+                            className="context-menu-item context-menu-close"
+                            onClick={() => {
+                                setShowContextMenu(false);
+                                setLongPressedChat(null);
+                            }}
+                        >
+                            <X size={16}/>
+                            <span>Cancel</span>
+                        </div>
+                    </div>
+                )}
+
+                {isSecretModalOpen && (
+                    <div className="modal-backdrop">
+                        <div className="modal-container">
+                            <div className="secret-modal-content">
+                                <button
+                                    className="secret-close-icon"
+                                    onClick={handleSecretModalClose}
+                                >
+                                    &times;
+                                </button>
+                                <h2>🔐 Secret Chats</h2>
+                                <p>Please enter your secret key to open the secret chats:</p>
+
+                                <div className="secret-input-container">
+                                    <input
+                                        type={showSecretKey ? "text" : "password"}
+                                        placeholder="Enter secret key"
+                                        value={userSecretKey}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleSecretKeySubmit();
+                                            }
+                                        }}
+                                        onChange={(e) => setUserSecretKey(e.target.value)}
+                                        className="secret-input"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="secret-toggle-btn"
+                                        onClick={() => setShowSecretKey(!showSecretKey)}
+                                        title={showSecretKey ? "Hide secret key" : "Show secret key"}
+                                    >
+                                        {showSecretKey ? <EyeOff size={20}/> : <Eye size={20}/>}
+                                    </button>
+                                </div>
+                                {errorMsg && <div className="secret-error-msg">{errorMsg}</div>}
+
+                                <div className="secret-button-group">
+                                    <button
+                                        className="secret-submit-btn"
+                                        onClick={handleSecretKeySubmit}
+                                    >
+                                        Unlock
+                                    </button>
+                                    <button
+                                        className="secret-close-btn"
+                                        onClick={handleSecretModalClose}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
-    );
-};
+                )}
+
+                {isNewChatModalOpen && (
+                    <div className="chat-page-modal-overlay">
+                        <div className="chat-page-modal-container">
+                            <div className="chat-page-modal-content">
+                                <button
+                                    className="chat-page-modal-close"
+                                    onClick={handleNewChatModalClose}
+                                >
+                                    &times;
+                                </button>
+                                <h3>Start New Chat</h3>
+
+                                <input
+                                    type="text"
+                                    placeholder="Search users..."
+                                    className="chat-page-search-input"
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+
+                                <div className="chat-page-search-results">
+                                    {searchResults.map((user) => (
+                                        <div key={user._id} onClick={() => startChat(user)}
+                                             className="chat-page-user-item">
+                                            <div>{user.name}</div>
+                                            <div className="email">{user.email}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {isCreateGroupModalOpen && (
+                    <div className="modal-backdrop">
+                        <div className="modal-container">
+                            <div className="group-modal-content">
+                                <button
+                                    className="modal-close-icon"
+                                    onClick={handleCreateGroupModalClose}
+                                >
+                                    &times;
+                                </button>
+                                <h2>👥 Create Group Chat</h2>
+                                <p>Enter group name and select users to add:</p>
+
+                                <input
+                                    type="text"
+                                    value={groupName}
+                                    onChange={(e) => setGroupName(e.target.value)}
+                                    placeholder="Enter group name"
+                                    className="group-name-input"
+                                />
+
+                                <div className="search-input-group">
+                                    <input
+                                        type="text"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        placeholder="Search users by name or email"
+                                        className="search-input"
+                                    />
+                                    <button
+                                        className="search-btn"
+                                        onClick={() => searchUsers(searchTerm)}
+                                        disabled={searchLoading}
+                                    >
+                                        {searchLoading ? "Searching..." : "Search"}
+                                    </button>
+                                </div>
+
+                                {selectedUsers.length > 0 && (
+                                    <div className="selected-users">
+                                        <h4>Selected Users ({selectedUsers.length}):</h4>
+                                        <div className="selected-users-list">
+                                            {selectedUsers.map(userId => {
+                                                const user = searchResults.find(u => u._id === userId);
+                                                return user ? (
+                                                    <span key={userId} className="selected-user-tag">
+                                                        {user.name}
+                                                        <button onClick={() => toggleUserSelection(userId)}>×</button>
+                                                    </span>
+                                                ) : null;
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="search-results">
+                                    {searchResults.map((user) => (
+                                        <div
+                                            className={`result-card ${selectedUsers.includes(user._id) ? 'selected' : ''}`}
+                                            key={user._id}>
+                                            <span>
+                                                {user.name} ({user.email})
+                                            </span>
+                                            <button
+                                                className={`select-btn ${selectedUsers.includes(user._id) ? 'selected' : ''}`}
+                                                onClick={() => toggleUserSelection(user._id)}
+                                            >
+                                                {selectedUsers.includes(user._id) ? "Remove" : "Add"}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="group-button-group">
+                                    <button
+                                        className="create-group-btn"
+                                        onClick={createGroupChat}
+                                        disabled={groupName.trim() === "" || selectedUsers.length === 0}
+                                    >
+                                        Create Group
+                                    </button>
+                                    <button
+                                        className="cancel-btn"
+                                        onClick={handleCreateGroupModalClose}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Profile Image Modal */}
+                {isProfileImageModalOpen && (
+                    <div className="modal-backdrop">
+                        <div className="modal-container">
+                            <div className="profile-image-modal-content">
+                                <button
+                                    className="modal-close-icon"
+                                    onClick={handleProfileImageModalClose}
+                                >
+                                    &times;
+                                </button>
+                                <div className="profile-image-container">
+                                    <img
+                                        src={
+                                            base64Image
+                                                ? `data:image/jpeg;base64,${base64Image}`
+                                                : "https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&dpr=2"
+                                        }
+                                        alt="Profile"
+                                        className="profile-image-large"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+    ;
+}
 
 export default ChatPage;
