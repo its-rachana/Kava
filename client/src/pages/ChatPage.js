@@ -653,7 +653,7 @@ const ChatPage = () => {
                                 )}
                                 <div className="chat-avatar">
                                     <img
-                                        src="https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop"
+                                        src={chat.profilePhoto ? chat.profilePhoto : "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop"}
                                         alt="Chat Avatar"
                                         className="chat-avatar-image"
                                     />
@@ -736,6 +736,11 @@ const ChatPage = () => {
                                     type={showSecretKey ? "text" : "password"}
                                     placeholder="Enter secret key"
                                     value={userSecretKey}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleSecretKeySubmit();
+                                        }
+                                    }}
                                     onChange={(e) => setUserSecretKey(e.target.value)}
                                     className="secret-input"
                                 />
@@ -779,7 +784,7 @@ const ChatPage = () => {
                             >
                                 &times;
                             </button>
-                            <h3>Start New Secret Chat</h3>
+                            <h3>Start New Chat</h3>
 
                             <input
                                 type="text"

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Mail, Lock, User, Key, Eye, EyeOff, ArrowRight, AlertCircle,
   Sun, Moon, Sunrise, Sunset, CloudRain, Stars, UserPlus,
-  MessageCircle, X, Send, HelpCircle, Zap
+  MessageCircle, X, Send, HelpCircle, Zap,UserRoundSearch,
 } from "lucide-react";
 import "./Register.css";
 
@@ -15,7 +15,8 @@ function Register() {
     password: "",
     pic: "",
     secretKey: "",
-    dob:""
+    dob:"",
+    gender:""
   });
 
   const [errorMessage, setErrorMessage] = useState("");
@@ -449,7 +450,7 @@ function Register() {
               </div>
               {validationErrors.name && (
                   <div className="field-error">
-                    <AlertCircle size={14} />
+                    <AlertCircle size={14}/>
                     <span>{validationErrors.name}</span>
                   </div>
               )}
@@ -473,7 +474,7 @@ function Register() {
               </div>
               {validationErrors.email && (
                   <div className="field-error">
-                    <AlertCircle size={14} />
+                    <AlertCircle size={14}/>
                     <span>{validationErrors.email}</span>
                   </div>
               )}
@@ -505,13 +506,27 @@ function Register() {
               </div>
               {validationErrors.password && (
                   <div className="field-error">
-                    <AlertCircle size={14} />
+                    <AlertCircle size={14}/>
                     <span>{validationErrors.password}</span>
                   </div>
               )}
             </div>
-
             <div className="input-group animate-slide-in-delayed-4">
+              <div className="input-wrapper">
+                <div className="input-icon">
+                  <UserRoundSearch size={20}/>
+                </div>
+                <input
+                    name="userGender"
+                    placeholder={"Enter your gender - Male / Female"}
+                    value={formData.gender}
+                    onChange={handleChange}
+                    className="form-input"
+                    disabled={isLoading}
+                />
+              </div>
+            </div>
+            <div className="input-group animate-slide-in-delayed-5">
               <div className="input-wrapper">
                 <div className="input-icon">
                   <Key size={20}/>
@@ -529,8 +544,7 @@ function Register() {
                 Optional: Used for accessing hidden chats
               </div>
             </div>
-
-            <div className="input-group animate-slide-in-delayed-5">
+            <div className="input-group animate-slide-in-delayed-6">
               <div className="input-wrapper">
                 <div className="input-icon">
                   <User size={20}/>
@@ -552,7 +566,7 @@ function Register() {
               </div>
               {validationErrors.dob && (
                   <div className="field-error">
-                    <AlertCircle size={14} />
+                    <AlertCircle size={14}/>
                     <span>{validationErrors.dob}</span>
                   </div>
               )}

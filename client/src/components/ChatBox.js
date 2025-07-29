@@ -30,6 +30,7 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
 
     useEffect(() => {
         setCurrentUser(userInfo);
+
         if (!selectedChat) return;
 
         // Handle both new chats and existing chats - decode messages
@@ -371,12 +372,17 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
         return selectedChat.withUserName || selectedChat.withUserId?.name || "Unknown User";
     };
 
+
     const getUserProfilePicture = () => {
         if (selectedChat.isGroupChat) {
-            return selectedChat.groupPicture || "https://images.pexels.com/photos/8761854/pexels-photo-8761854.jpeg?auto=compress&cs=tinysrgb&w=400";
+            return selectedChat.profilePhoto || "https://images.pexels.com/photos/8761854/pexels-photo-8761854.jpeg?auto=compress&cs=tinysrgb&w=400";
         }
-        return selectedChat.withUserId?.profilePhoto || selectedChat.profilePhoto || "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400";
-    };
+        return selectedChat.withUserId?.profilePhoto ||
+        (selectedChat.gender === 'female'
+                ? "femaleIcon.png"
+                : "maleIcon1.png"
+
+        )    };
 
     const handleProfilePictureClick = () => {
         setShowProfileModal(true);
