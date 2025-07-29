@@ -14,7 +14,8 @@ const userSchema = mongoose.Schema(
       otpExpiry: Date,
       profilePhoto: Buffer,
       twoFactorEnabled:Boolean,
-      token:String
+      token:String,
+      gender:String
 
   },
   { timestamps: true }
