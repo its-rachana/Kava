@@ -8,6 +8,7 @@ import {Trash2, Eye, EyeOff, Shield, X} from "lucide-react";
 import {useNavigate} from "react-router-dom";
 import "./ChatPage.css";
 import {arrayBufferToBase64} from "../utilities/image";
+import {decodeText} from "../utilities/textEncoder";
 
 const ChatPage = () => {
     const [chats, setChats] = useState([]);
@@ -195,7 +196,7 @@ const ChatPage = () => {
             const latestMessage = chat.messages[chat.messages.length - 1];
             const isCurrentUser = latestMessage.senderId === currentUser?._id;
             const senderName = isCurrentUser ? "You" : chat.withUserName || "Unknown";
-            return `${senderName}: ${latestMessage.text}`;
+            return `${senderName}: ${decodeText(latestMessage.text)}`;
         }
         return "No messages yet";
     };
@@ -558,7 +559,7 @@ const ChatPage = () => {
                                 src={
                                     base64Image
                                         ? `data:image/jpeg;base64,${base64Image}`
-                                        : "https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&dpr=2"
+                                        : currentUser.gender === "female" ? "femaleIcon.jpg" : "maleIcon.jpg"
                                 }
                                 alt="Profile"
                                 className="profile-picture"
@@ -653,7 +654,9 @@ const ChatPage = () => {
                                 )}
                                 <div className="chat-avatar">
                                     <img
-                                        src={chat.profilePhoto ? chat.profilePhoto : "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop"}
+                                        src={chat.profilePhoto ?
+                                            chat.profilePhoto :
+                                            chat.gender === "female" ? "femaleIcon.png" : "maleIcon.png" }
                                         alt="Chat Avatar"
                                         className="chat-avatar-image"
                                     />

@@ -85,7 +85,15 @@ const Profile = () => {
             return {theme: 'dark', timeOfDay: 'night', period: 'Night'};
         }
     };
+    useEffect(() => {
+        // Apply overflow hidden when component mounts
+        document.body.style.overflow = 'hidden';
 
+        // Cleanup - restore scrolling when component unmounts
+        return () => {
+            document.body.style.overflow = 'auto';
+        };
+    }, []);
     // Apply theme based on mode and time
     useEffect(() => {
         console.log("Theme useEffect triggered");
@@ -625,35 +633,6 @@ const Profile = () => {
 
     console.log("Profile component rendering, isLoading:", isLoading, "user:", !!user);
 
-    // if (isLoading) {
-    //     return (
-    //         <div className={`profile-container theme-${currentTheme} time-${timeOfDay}`}>
-    //             {/* Atmospheric Elements */}
-    //             <div className="atmospheric-elements">
-    //                 {timeOfDay === 'night' && (
-    //                     <>
-    //                         <div className="stars"></div>
-    //                         <div className="shooting-star"></div>
-    //                     </>
-    //                 )}
-    //                 {timeOfDay === 'dawn' && (
-    //                     <div className="sunrise-rays"></div>
-    //                 )}
-    //                 {timeOfDay === 'dusk' && (
-    //                     <div className="dusk-clouds"></div>
-    //                 )}
-    //                 {(timeOfDay === 'morning' || timeOfDay === 'afternoon') && (
-    //                     <div className="day-particles"></div>
-    //                 )}
-    //             </div>
-    //
-    //             <div className="loading-spinner animate-fade-in">
-    //                 <div className="spinner"></div>
-    //                 <p>Loading your profile...</p>
-    //             </div>
-    //         </div>
-    //     );
-    // }
     if (isLoading) {
         return (
             <div className={`profile-container theme-${currentTheme} time-${timeOfDay}`}>
