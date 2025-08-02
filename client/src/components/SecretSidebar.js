@@ -133,7 +133,7 @@ const SecretSidebar = ({ onSelectUser, selectedUserInfo, fetchChats, updateSelec
                 fetchChats();
             }
         } catch (error) {
-            console.error("Error moving chat to normal:", error);
+
         }
     };
 

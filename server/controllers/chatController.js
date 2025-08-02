@@ -60,15 +60,43 @@ const addMessageToConversation = asyncHandler(async (req, res) => {
     }
 });
 
-const fetchChats = asyncHandler(async (req, res) => {
+// const fetchChats = asyncHandler(async (req, res) => {
+//
+//     if (!req.query.userId) {
+//         return res.status(400).json({message: "User ID is required"});
+//     }
+//     if (!mongoose.Types.ObjectId.isValid(req.query.userId)) {
+//         return res.status(400).json({ message: "Invalid user ID" });
+//     }
+//     try {
+//         const userChat = await UserChats.findOne({
+//             _id: req.query.userId
+//         }).populate({
+//             path: "conversations.withUserId",
+//             select: "name email pic",
+//             model: "User"
+//         }).lean();
+//         if (!userChat) {
+//             return res.status(200).json([]);
+//         }
+//
+//         return res.status(200).json(userChat || []);
+//     } catch (error) {
+//
+//         return res.status(500).json({message: "Server error"});
+//     }
+// });
 
+const fetchChats = asyncHandler(async (req, res) => {
+    console.log("fetching chats")
     if (!req.query.userId) {
-        return res.status(400).json({message: "User ID is required"});
+        return res.status(400).json({ message: "User ID is required" });
     }
-    console.log("user id is found",req.query.userId)
+
     if (!mongoose.Types.ObjectId.isValid(req.query.userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
     }
+
     try {
         const userChat = await UserChats.findOne({
             _id: req.query.userId
@@ -77,18 +105,21 @@ const fetchChats = asyncHandler(async (req, res) => {
             select: "name email pic",
             model: "User"
         }).lean();
-        console.log(userChat)
+
         if (!userChat) {
             return res.status(200).json([]);
         }
 
-        return res.status(200).json(userChat || []);
-    } catch (error) {
-        console.error("FetchChats Error:", error.stack);
+        userChat.conversations = userChat.conversations.filter(convo =>
+            convo.messages && convo.messages.length > 0
+        );
 
-        return res.status(500).json({message: "Server error"});
+        return res.status(200).json(userChat);
+    } catch (error) {
+        return res.status(500).json({ message: "Server error" });
     }
 });
+
 const createGroupChat = asyncHandler(async (req, res) => {
     const {name, users} = req.body;
     if (!name || !users) return res.status(400).json({message: "All fields required"});

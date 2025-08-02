@@ -106,7 +106,6 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
             // If it's a scheduled message, handle differently
             if (messageData.scheduledFor) {
                 // You would typically send this to a different endpoint for scheduling
-                console.log('Scheduling message for:', messageData.scheduledFor);
             }
 
             const { data } = await axios.post(
@@ -131,7 +130,6 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
             setScheduledTime('');
             setShowEmojiPicker(false);
         } catch (err) {
-            console.error("Error sending message:", err);
         }
     };
 
@@ -217,7 +215,6 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
                 setRecordingTime(prev => prev + 1);
             }, 1000);
         } catch (error) {
-            console.error('Error accessing microphone:', error);
             alert('Could not access microphone. Please check permissions.');
         }
     };
@@ -291,7 +288,6 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
     const handleLongPressStart = (event, messageId) => {
         const startX = event.touches ? event.touches[0].clientX : event.clientX;
         const startY = event.touches ? event.touches[0].clientY : event.clientY;
-        console.log("long press on bubble detected")
         setLongPressStartPos({ x: startX, y: startY });
 
         const timer = setTimeout(() => {
@@ -339,7 +335,6 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
 
     const handleMessageClick = (event, messageId) => {
         event.stopPropagation();
-        console.log("message clicked for deletiong")
         // Close context menu if clicking on a different message
         if (contextMenu.show && contextMenu.messageId !== messageId) {
             setContextMenu({ show: false, x: 0, y: 0, messageId: null });
@@ -349,7 +344,6 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
     const deleteMessage = async (messageId, deleteType) => {
         try {
             // This would typically make an API call to delete the message
-            console.log(`Deleting message ${messageId} with type: ${deleteType}`);
 
             // For now, just remove from local state
             setMessages(prev => prev.filter(msg => msg._id !== messageId));
@@ -361,7 +355,7 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
             //     headers: { Authorization: `Bearer ${userInfo.token}` }
             // });
         } catch (error) {
-            console.error('Error deleting message:', error);
+
         }
     };
 
@@ -455,7 +449,6 @@ const ChatBox = ({ selectedChat, refreshChats, setSelectedChat }) => {
                     setMessages((prev) => [...prev, decodedMessage]);
                     setIsGettingLocation(false);
                 } catch (err) {
-                    console.error("Error sending location:", err);
                     setIsGettingLocation(false);
                     alert('Failed to send location. Please try again.');
                 }

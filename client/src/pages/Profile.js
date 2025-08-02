@@ -96,7 +96,6 @@ const Profile = () => {
     }, []);
     // Apply theme based on mode and time
     useEffect(() => {
-        console.log("Theme useEffect triggered");
         const updateTheme = () => {
             const timeTheme = getTimeBasedTheme();
 
@@ -135,7 +134,6 @@ const Profile = () => {
 
     // Store theme preference
     useEffect(() => {
-        console.log("Theme storage useEffect triggered");
         localStorage.setItem('themeMode', themeMode);
     }, [themeMode]);
 
@@ -180,15 +178,10 @@ const Profile = () => {
     };
 
     useEffect(() => {
-        console.log("Profile useEffect triggered - fetching profile data");
         const fetchProfile = async () => {
-            console.log("Starting fetchProfile function");
             const token = JSON.parse(localStorage.getItem("userInfo"))?.token;
-            console.log("Token found:", !!token);
-            console.log("API URL:", process.env.REACT_APP_API_URL);
 
             if (!token) {
-                console.log("No token found, setting loading to false");
                 setIsLoading(false);
                 return;
             }
@@ -200,12 +193,10 @@ const Profile = () => {
             };
 
             try {
-                console.log("Making API request to fetch profile");
                 const {data} = await axios.get(
                     process.env.REACT_APP_API_URL + "/api/user/profile",
                     config
                 );
-                console.log("Profile data received:", data);
                 if (data.profilePhoto && data.profilePhoto.data) {
                     setBase64Image(arrayBufferToBase64(data.profilePhoto.data));
                 }
@@ -215,11 +206,8 @@ const Profile = () => {
                 setNewDisplayName(data.displayName || "");
                 setTwoFactorEnabled(data.twoFactorEnabled || false);
             } catch (error) {
-                console.error("Error fetching profile:", error);
-                console.error("Error response:", error.response);
                 setMessage({text: "Failed to load profile data.", type: "error"});
             } finally {
-                console.log("Setting loading to false");
                 setIsLoading(false);
             }
         };
@@ -630,8 +618,6 @@ const Profile = () => {
             setAssistantMessages(prev => [...prev, confirmMessage]);
         }, 500);
     };
-
-    console.log("Profile component rendering, isLoading:", isLoading, "user:", !!user);
 
     if (isLoading) {
         return (

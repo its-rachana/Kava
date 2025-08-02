@@ -244,8 +244,7 @@ function Login() {
                     }
                 );
             } catch (error) {
-                console.error('Failed to send security alert:', error);
-            }
+                 }
         }
     };
 
@@ -291,8 +290,6 @@ function Login() {
                 await sendOtpFor2FA();
             } else {
                 // Store user info and redirect directly to chats
-                console.log("login data")
-                console.log(data)
                 localStorage.setItem("userInfo", JSON.stringify(data));
                 navigate("/chats");
             }

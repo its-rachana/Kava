@@ -55,14 +55,12 @@ const ChatPage = () => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
 
     useEffect(() => {
-        console.log("ion chatpage")
-        console.log(userInfo)
         setCurrentUser(userInfo);
-        // Fix profile image display
         if (userInfo?.profilePhoto?.data) {
             setBase64Image(arrayBufferToBase64(userInfo.profilePhoto.data));
         }
         fetchChats(userInfo._id);
+        fetchUserProfile(chats)
     }, []);
 
     useEffect(() => {
@@ -113,16 +111,21 @@ const ChatPage = () => {
         if (isNewChatModalOpen) fetchAllUsers().then(r => {
         });
     }, [isNewChatModalOpen]);
+
+    const fetchUserProfile = async(conversationList) =>{
+        const userIds = conversationList.map(convo => convo.withUserId._id);
+        console.log("fetching user profile")
+        console.log(userIds)
+    }
     const fetchChats = async (userId) => {
         try {
             const {data} = await axios.get(
                 process.env.REACT_APP_API_URL + `/api/chat?userId=${userId}`,
                 config
             );
-            // Access conversations from the nested data structure
             setChats(data?.conversations || []);
+            fetchUserProfile(data.conversations).then()
         } catch (err) {
-            console.error("Error fetching chats:", err);
             setChats([]);
         }
     };
@@ -164,7 +167,7 @@ const ChatPage = () => {
                 setSelectedChat(null);
             }
         } catch (error) {
-            console.error("Error removing chat:", error);
+
         }
     };
 
@@ -319,7 +322,6 @@ const ChatPage = () => {
             // Show success message
             alert("Chat moved to secret chats successfully!");
         } catch (error) {
-            console.error("Error moving chat to secret:", error);
             alert("Failed to move chat to secret chats. Please try again.");
         }
     };
@@ -363,7 +365,6 @@ const ChatPage = () => {
                 // Reset selection
                 setSelectedChatsForDeletion([]);
             } catch (error) {
-                console.error("Error deleting chats:", error);
                 alert("Failed to delete some chats. Please try again.");
             }
         }
@@ -386,7 +387,6 @@ const ChatPage = () => {
 
             setSearchResults(data);
         } catch (error) {
-            console.error("Error searching users:", error);
             setSearchResults([]);
         } finally {
             setSearchLoading(false);
@@ -441,7 +441,6 @@ const ChatPage = () => {
             handleNewChatModalClose();
 
         } catch (err) {
-            console.error("Error starting chat:", err);
             alert("Failed to start chat. Please try again.");
         }
     };
@@ -471,7 +470,6 @@ const ChatPage = () => {
             handleChatCreated(data);
             handleCreateGroupModalClose();
         } catch (err) {
-            console.error("Error creating group chat:", err);
             alert("Failed to create group chat. Please try again.");
         }
     };
@@ -517,7 +515,6 @@ const ChatPage = () => {
     };
 
     const handleNewChatModalClose = () => {
-        console.log("new chat")
         setIsNewChatModalOpen(false);
         setIsModalOpen(false);
         setSearchTerm("");
@@ -635,7 +632,6 @@ const ChatPage = () => {
 
                     <div className="chats-list">
                         {getFilteredChats().map((chat) => {
-                            console.log('Rendering chat:', chat.withUserName || chat.chatName); // Debug log
                             return (
                                 <div
                                     key={chat._id}
