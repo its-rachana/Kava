@@ -517,7 +517,7 @@ function Register() {
                   <UserRoundSearch size={20}/>
                 </div>
                 <input
-                    name="userGender"
+                    name="gender"
                     placeholder={"Enter your gender - Male / Female"}
                     value={formData.gender}
                     onChange={handleChange}
